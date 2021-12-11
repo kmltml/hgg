@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generator
+from typing import Generator, Optional
 import numpy as np
+import svgwrite
+from svgwrite import mm, px
 
 @dataclass
 class Node:
@@ -28,18 +30,18 @@ class Graph:
 
     nodes: dict[int, tuple[Node, list[int]]]
 
+    def __init__(self, nodes: dict[int, tuple[Node, list[int]]]):
+        self.nodes = nodes
+        for a_id, (_, ns) in nodes.items():
+            for b_id in ns:
+                if a_id not in nodes[b_id][1]:
+                    nodes[b_id][1].append(a_id)
+
     def node(self, id: int) -> Node:
         return self.nodes[id][0]
 
     def neighbours(self, id: int) -> list[int]:
         return self.nodes[id][1]
-
-    def edge_neighbours(self, id: int) -> list[int]:
-        return [x
-                for e in self.neighbours(id)
-                if self.node(e).is_hyperedge and self.node(e).label in {"s", "t", "r", "x", "e"}
-                for x in self.neighbours(e)
-                if x != id]
 
     def first_free_id(self) -> int:
         return max(self.nodes.keys()) + 1
@@ -81,3 +83,50 @@ class Graph:
 
             for x in rec(seed_id, map, node_ids_to_add):
                 yield x
+
+    def to_svg(self, svg: Optional[svgwrite.Drawing] = None):
+        if svg is None:
+            svg = svgwrite.Drawing(size = (400 * px, 400 * px))
+
+        min_x = 0
+        min_y = 0
+        max_x = 0
+        max_y = 0
+
+        for node_id, (node, neighbours) in self.nodes.items():
+            x, y = node.pos
+
+            for n in neighbours:
+                if n < node_id:
+                    neighbour = self.node(n)
+                    x2, y2 = neighbour.pos
+                    svg.add(svg.line((100 * x * px, 100 * y * px), (100 * x2 * px, 100 * y2 * px), stroke="black"))
+
+        for node_id, (node, neighbours) in self.nodes.items():
+            x, y = node.pos
+            min_x = min(x * 100 - 20, min_x)
+            min_y = min(y * 100 - 20, min_y)
+            max_x = max(x * 100 + 20, max_x)
+            max_y = max(y * 100 + 20, max_y)
+
+            if node.is_hyperedge:
+                size = 30
+                pos = ((100 * x - size / 2) * px, (100 * y - size / 2) * px)
+                svg.add(svg.rect(insert = pos, size = (size * px, size * px), stroke = "black", fill = "white"))
+                label = svg.text(node.label, insert = (100 * x * px, 100 * y * px))
+                label["text-anchor"] = "middle"
+                label["dominant-baseline"] = "middle"
+                svg.add(label)
+            else:
+                svg.add(svg.circle(center = (x * 100 * px, y * 100 * px), r = 2 * px))
+                if node.label != "":
+                    label = svg.text(node.label, insert = (100 * x * px, (100 * y - 10) * px))
+                    label["text-anchor"] = "middle"
+                    label["dominant-baseline"] = "middle"
+                    svg.add(label)
+
+        svg.viewbox(min_x, min_y, max_x - min_x, max_y - min_y)
+        return svg
+
+    def _repr_svg_(self):
+        return self.to_svg().tostring()
