@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Generator, Optional
 import numpy as np
 import svgwrite
-from svgwrite import mm, px
+from svgwrite import px
 
 @dataclass
 class Node:
