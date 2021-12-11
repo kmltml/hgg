@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Generator, Optional
 import numpy as np
 import svgwrite
+import svgwrite.container
 from svgwrite import px
 
 @dataclass
@@ -84,9 +85,8 @@ class Graph:
             for x in rec(seed_id, map, node_ids_to_add):
                 yield x
 
-    def to_svg(self, svg: Optional[svgwrite.Drawing] = None):
-        if svg is None:
-            svg = svgwrite.Drawing(size = (400 * px, 400 * px))
+    def to_svg(self, dwg: svgwrite.Drawing, show_ids = False):
+        svg = svgwrite.container.SVG()
 
         min_x = 0
         min_y = 0
@@ -100,33 +100,47 @@ class Graph:
                 if n < node_id:
                     neighbour = self.node(n)
                     x2, y2 = neighbour.pos
-                    svg.add(svg.line((100 * x * px, 100 * y * px), (100 * x2 * px, 100 * y2 * px), stroke="black"))
+                    svg.add(dwg.line((100 * x * px, 100 * y * px), (100 * x2 * px, 100 * y2 * px), stroke="black"))
 
         for node_id, (node, neighbours) in self.nodes.items():
             x, y = node.pos
-            min_x = min(x * 100 - 20, min_x)
-            min_y = min(y * 100 - 20, min_y)
-            max_x = max(x * 100 + 20, max_x)
-            max_y = max(y * 100 + 20, max_y)
+            min_x = min(x * 100 - 40, min_x)
+            min_y = min(y * 100 - 40, min_y)
+            max_x = max(x * 100 + 40, max_x)
+            max_y = max(y * 100 + 40, max_y)
 
             if node.is_hyperedge:
                 size = 30
                 pos = ((100 * x - size / 2) * px, (100 * y - size / 2) * px)
-                svg.add(svg.rect(insert = pos, size = (size * px, size * px), stroke = "black", fill = "white"))
-                label = svg.text(node.label, insert = (100 * x * px, 100 * y * px))
+                svg.add(dwg.rect(insert = pos, size = (size * px, size * px), stroke = "black", fill = "white"))
+                label = dwg.text(node.label, insert = (100 * x * px, 100 * y * px))
                 label["text-anchor"] = "middle"
                 label["dominant-baseline"] = "middle"
                 svg.add(label)
+
+                if show_ids:
+                    id_label = dwg.text(str(node_id), insert = ((100 * x + size / 2 + 10) * px, (100 * y + size / 2 + 10) * px))
+                    id_label["text-anchor"] = "middle"
+                    id_label["dominant-baseline"] = "middle"
+                    svg.add(id_label)
             else:
-                svg.add(svg.circle(center = (x * 100 * px, y * 100 * px), r = 2 * px))
+                svg.add(dwg.circle(center = (x * 100 * px, y * 100 * px), r = 2 * px))
                 if node.label != "":
-                    label = svg.text(node.label, insert = (100 * x * px, (100 * y - 10) * px))
+                    label = dwg.text(node.label, insert = ((100 * x - 10) * px, (100 * y - 10) * px))
                     label["text-anchor"] = "middle"
                     label["dominant-baseline"] = "middle"
                     svg.add(label)
+                if show_ids:
+                    id_label = dwg.text(str(node_id), insert = ((100 * x + 10) * px, (100 * y + 10) * px))
+                    id_label["text-anchor"] = "middle"
+                    id_label["dominant-baseline"] = "middle"
+                    svg.add(id_label)
 
         svg.viewbox(min_x, min_y, max_x - min_x, max_y - min_y)
         return svg
 
     def _repr_svg_(self):
-        return self.to_svg().tostring()
+        dwg = svgwrite.Drawing(size = (400 * px, 400 * px))
+        svg = self.to_svg(dwg)
+        dwg.add(svg)
+        return dwg.tostring()

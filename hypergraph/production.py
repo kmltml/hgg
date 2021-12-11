@@ -1,4 +1,6 @@
 from .graph import Graph
+import svgwrite
+from svgwrite import px
 from dataclasses import dataclass, replace
 
 import numpy as np
@@ -65,3 +67,22 @@ class Production:
             del new_nodes[id_map[id]]
 
         return Graph(new_nodes)
+
+    def to_svg(self, dwg: svgwrite.Drawing) -> svgwrite.Drawing:
+        left_svg = self.left.to_svg(dwg, show_ids = True)
+        left_svg["x"] = -250 * px
+        dwg.add(left_svg)
+        right_svg = self.right.to_svg(dwg, show_ids = True)
+        right_svg["x"] = 250 * px
+        dwg.add(right_svg)
+
+        dwg.add(dwg.line((420 * px, 200 * px), (480 * px, 200 * px), stroke = "black"))
+        dwg.add(dwg.line((480 * px, 200 * px), (460 * px, 210 * px), stroke = "black"))
+        dwg.add(dwg.line((480 * px, 200 * px), (460 * px, 190 * px), stroke = "black"))
+        dwg.viewbox(0, 0, 900, 400)
+
+        return dwg
+
+    def _repr_svg_(self):
+        dwg = svgwrite.Drawing(size = (900 * px, 400 * px))
+        return self.to_svg(dwg).tostring()
