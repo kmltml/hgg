@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Generator, Optional
 from .graph import Graph, Node
 import svgwrite
 from svgwrite import px
@@ -13,6 +13,7 @@ class Production:
     right: Graph
     seed_node: int
     attributes: Callable[[dict[int, Node]], dict[int, dict[str, str]]] = field(default = lambda _: {})
+    predicate: Callable[[dict[int, Node]], bool] = field(default = lambda _: True)
 
     def inserted_ids(self) -> set[int]:
         return set(self.right.nodes.keys()) - set(self.left.nodes.keys())
@@ -23,7 +24,18 @@ class Production:
     def removed_ids(self) -> set[int]:
         return set(self.left.nodes.keys()) - set(self.right.nodes.keys())
 
+    def is_applicable(self, graph: Graph, id_map: dict[int, int]) -> bool:
+        attrs = {
+            pattern_id: graph.node(graph_id)
+            for pattern_id, graph_id in id_map.items()
+            if pattern_id in self.left.nodes
+        }
+        return self.predicate(attrs)
+
     def apply(self, graph: Graph, id_map: dict[int, int]) -> Graph:
+        if not self.is_applicable(graph, id_map):
+            return graph
+
         A = np.zeros((6, 6))
         for i in range(3):
             A[i * 2, 0:2] = self.left.nodes[i][0].pos
@@ -81,6 +93,32 @@ class Production:
             new_nodes[id_map[id]][0].attrs = attrs
 
         return Graph(new_nodes)
+
+    def apply_once(self, graph: Graph) -> Graph:
+        subgraph = next(graph.find_isomorphic(self.left, self.seed_node))
+        return self.apply(graph, subgraph)
+
+    def apply_many(self, graph: Graph, max_applications: Optional[int] = None) -> Graph:
+        i = 0
+        while True:
+            if max_applications is not None and i >= max_applications:
+                break
+
+            subgraph = next((g
+                             for g in graph.find_isomorphic(self.left, self.seed_node)
+                             if self.is_applicable(graph, g)),
+                            None)
+            if subgraph is None:
+                break
+
+            graph = self.apply(graph, subgraph)
+            i += 1
+
+        return graph
+
+    def apply_all_possible(self, graph: Graph) -> Generator[Graph, None, None]:
+        for subgraph in graph.find_isomorphic(self.left, self.seed_node):
+            yield self.apply(graph, subgraph)
 
     def to_svg(self, dwg: svgwrite.Drawing) -> svgwrite.Drawing:
         left_svg = self.left.to_svg(dwg, show_ids = True)
