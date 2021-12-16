@@ -1,7 +1,8 @@
-from .graph import Graph
+from typing import Callable
+from .graph import Graph, Node
 import svgwrite
 from svgwrite import px
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -11,6 +12,7 @@ class Production:
     left: Graph
     right: Graph
     seed_node: int
+    attributes: Callable[[dict[int, Node]], dict[int, dict[str, str]]] = field(default = lambda _: {})
 
     def inserted_ids(self) -> set[int]:
         return set(self.right.nodes.keys()) - set(self.left.nodes.keys())
@@ -58,13 +60,25 @@ class Production:
         for id in self.modified_ids():
             new_id = id_map[id]
             node, ns = self.right.nodes[id]
-            node = replace(node, pos = transform(node.pos))
+            node = replace(node, pos = transform(node.pos), attrs = graph.node(new_id).attrs)
             new_ns = set(id_map[n] for n in ns)
             new_ns = new_ns | set(graph.nodes[new_id][1])
             new_nodes[new_id] = (node, list(new_ns))
 
         for id in self.removed_ids():
             del new_nodes[id_map[id]]
+
+
+        attrs = {
+            pattern_id: graph.node(graph_id)
+            for pattern_id, graph_id in id_map.items()
+            if pattern_id in self.left.nodes
+        }
+
+        new_attrs = self.attributes(attrs)
+
+        for id, attrs in new_attrs.items():
+            new_nodes[id_map[id]][0].attrs = attrs
 
         return Graph(new_nodes)
 

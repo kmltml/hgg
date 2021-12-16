@@ -13,7 +13,7 @@ class Node:
     is_hyperedge: bool
     pos: np.ndarray
     label: str
-    attribs: dict[str, str]
+    attrs: dict[str, str]
 
     @staticmethod
     def vertex(pos: np.ndarray, label: str = "", attribs: dict[str, str] = {}) -> Node:
@@ -123,6 +123,12 @@ class Graph:
                     id_label["text-anchor"] = "middle"
                     id_label["dominant-baseline"] = "middle"
                     svg.add(id_label)
+
+                for i, (k, v) in enumerate(node.attrs.items()):
+                    text = dwg.text(f"{k} = {v}", insert = (100 * x * px, (100 * y + 15 * i + size) * px))
+                    text["text-anchor"] = "middle"
+                    text["dominant-baseline"] = "middle"
+                    svg.add(text)
             else:
                 svg.add(dwg.circle(center = (x * 100 * px, y * 100 * px), r = 2 * px))
                 if node.label != "":
