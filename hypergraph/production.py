@@ -122,10 +122,14 @@ class Production:
 
     def to_svg(self, dwg: svgwrite.Drawing) -> svgwrite.Drawing:
         left_svg = self.left.to_svg(dwg, show_ids = True)
-        left_svg["x"] = -250 * px
+        left_svg["x"] = 0 * px
+        left_svg["width"] = 400 * px
+        left_svg["height"] = 400 * px
         dwg.add(left_svg)
         right_svg = self.right.to_svg(dwg, show_ids = True)
-        right_svg["x"] = 250 * px
+        right_svg["x"] = 500 * px
+        right_svg["width"] = 400 * px
+        right_svg["height"] = 400 * px
         dwg.add(right_svg)
 
         dwg.add(dwg.line((420 * px, 200 * px), (480 * px, 200 * px), stroke = "black"))
