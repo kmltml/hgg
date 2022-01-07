@@ -1,4 +1,4 @@
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 from .graph import Graph, Node
 import svgwrite
 from svgwrite import px
@@ -12,7 +12,7 @@ class Production:
     left: Graph
     right: Graph
     seed_node: int
-    attributes: Callable[[dict[int, Node]], dict[int, dict[str, str]]] = field(default = lambda _: {})
+    attributes: Callable[[dict[int, Node]], dict[int, dict[str, Any]]] = field(default = lambda _: {})
     predicate: Callable[[dict[int, Node]], bool] = field(default = lambda _: True)
 
     def inserted_ids(self) -> set[int]:

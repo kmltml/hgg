@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generator, Optional
+from typing import Any, Generator, Optional
 import numpy as np
 import svgwrite
 import svgwrite.container
@@ -13,15 +13,15 @@ class Node:
     is_hyperedge: bool
     pos: np.ndarray
     label: str
-    attrs: dict[str, str]
+    attrs: dict[str, Any]
 
     @staticmethod
-    def vertex(pos: np.ndarray, label: str = "", attribs: dict[str, str] = {}) -> Node:
-        return Node(False, pos, label, attribs)
+    def vertex(pos: np.ndarray, label: str = "", attrs: dict[str, Any] = {}) -> Node:
+        return Node(False, pos, label, attrs)
 
     @staticmethod
-    def hyperedge(pos: np.ndarray, label: str, attribs: dict[str, str] = {}) -> Node:
-        return Node(True, pos, label, attribs)
+    def hyperedge(pos: np.ndarray, label: str, attrs: dict[str, Any] = {}) -> Node:
+        return Node(True, pos, label, attrs)
 
     def matches(self, other: Node) -> bool:
         return self.is_hyperedge == other.is_hyperedge and self.label == other.label
