@@ -32,9 +32,9 @@ class Production:
         }
         return self.predicate(attrs)
 
-    def apply(self, graph: Graph, id_map: dict[int, int]) -> Graph:
+    def apply(self, graph: Graph, id_map: dict[int, int]) -> Optional[Graph]:
         if not self.is_applicable(graph, id_map):
-            return graph
+            return None
 
         A = np.zeros((6, 6))
         for i in range(3):
@@ -94,9 +94,9 @@ class Production:
 
         return Graph(new_nodes)
 
-    def apply_once(self, graph: Graph) -> Graph:
-        subgraph = next(graph.find_isomorphic(self.left, self.seed_node))
-        return self.apply(graph, subgraph)
+    def apply_once(self, graph: Graph) -> Optional[Graph]:
+        subgraph = next(graph.find_isomorphic(self.left, self.seed_node), None)
+        return None if subgraph is None else self.apply(graph, subgraph)
 
     def apply_many(self, graph: Graph, max_applications: Optional[int] = None) -> Graph:
         i = 0

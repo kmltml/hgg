@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Generator, Optional
+from typing import Any, Generator
 import numpy as np
 import svgwrite
 import svgwrite.container
@@ -150,3 +150,9 @@ class Graph:
         svg = self.to_svg(dwg)
         dwg.add(svg)
         return dwg.tostring()
+
+    def save_svg(self, filename: str):
+        dwg = svgwrite.Drawing(size = (400 * px, 400 * px))
+        svg = self.to_svg(dwg)
+        dwg.add(svg)
+        dwg.saveas(filename)
